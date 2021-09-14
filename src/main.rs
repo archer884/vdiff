@@ -41,7 +41,7 @@ fn run(opts: &Opts) -> anyhow::Result<()> {
     }
 
     for set in by_hash.values().filter(|&x| x.len() > 1) {
-        println!("candidates:");
+        println!("\ncollision:");
         for ((x, y), paths) in set {
             println!("  {} x {}", x, y);
             for path in paths {
