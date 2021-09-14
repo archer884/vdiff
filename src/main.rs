@@ -30,14 +30,15 @@ fn run(opts: &Opts) -> anyhow::Result<()> {
             continue;
         }
 
-        let image = image::open(&path)?;
-        let hash = hasher.hash_image(&image);
-        by_hash
-            .entry(hash)
-            .or_insert_with(BTreeMap::new)
-            .entry(image.dimensions())
-            .or_insert_with(Vec::new)
-            .push(path);
+        if let Ok(image) = image::open(&path) {
+            let hash = hasher.hash_image(&image);
+            by_hash
+                .entry(hash)
+                .or_insert_with(BTreeMap::new)
+                .entry(image.dimensions())
+                .or_insert_with(Vec::new)
+                .push(path);
+        }
     }
 
     for set in by_hash.values().filter(|&x| x.len() > 1) {
