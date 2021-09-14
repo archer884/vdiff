@@ -4,6 +4,7 @@ use clap::Clap;
 use hashbrown::HashMap;
 use image::GenericImageView;
 use img_hash::HasherConfig;
+use rayon::prelude::*;
 
 #[derive(Clap, Clone, Debug)]
 struct Opts {
@@ -20,26 +21,41 @@ fn main() {
 }
 
 fn run(opts: &Opts) -> anyhow::Result<()> {
+    let images: Vec<_> = fs::read_dir(&opts.path)?
+        .filter_map(|entry| entry.ok())
+        .filter_map(|entry| {
+            let path = entry.path();
+            if path.is_file() {
+                Some(path)
+            } else {
+                None
+            }
+        })
+        .collect();
+
+    let candidates: Vec<_> = images
+        .par_iter()
+        .map_init(
+            || HasherConfig::new().to_hasher(),
+            |hasher, path| {
+                image::open(&path).map(|image| {
+                    let hash = hasher.hash_image(&image);
+                    (image.dimensions(), path, hash)
+                })
+            },
+        )
+        .flatten()
+        .collect();
+
     let mut by_hash = HashMap::new();
-    let hasher = HasherConfig::new().to_hasher();
-    let images = fs::read_dir(&opts.path)?;
-
-    for image_entry in images {
-        let path = image_entry?.path();
-        if !path.is_file() {
-            continue;
-        }
-
-        if let Ok(image) = image::open(&path) {
-            let hash = hasher.hash_image(&image);
-            by_hash
-                .entry(hash)
-                .or_insert_with(BTreeMap::new)
-                .entry(image.dimensions())
-                .or_insert_with(Vec::new)
-                .push(path);
-        }
-    }
+    candidates.into_iter().for_each(|(dimensions, path, hash)| {
+        by_hash
+            .entry(hash)
+            .or_insert_with(BTreeMap::new)
+            .entry(dimensions)
+            .or_insert_with(Vec::new)
+            .push(path);
+    });
 
     for set in by_hash.values().filter(|&x| x.len() > 1) {
         println!("\ncollision:");

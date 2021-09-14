@@ -412,6 +412,7 @@ dependencies = [
  "hashbrown",
  "image",
  "img_hash",
+ "rayon",
 ]
 
 [[package]]
