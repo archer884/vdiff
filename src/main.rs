@@ -36,7 +36,7 @@ fn run(opts: &Opts) -> anyhow::Result<()> {
     let candidates: Vec<_> = images
         .par_iter()
         .map_init(
-            || HasherConfig::new().to_hasher(),
+            || HasherConfig::new().preproc_dct().to_hasher(),
             |hasher, path| {
                 image::open(&path).map(|image| {
                     let hash = hasher.hash_image(&image);
