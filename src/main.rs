@@ -9,6 +9,8 @@ use rayon::prelude::*;
 #[derive(Clap, Clone, Debug)]
 struct Opts {
     path: String,
+    #[clap(long)]
+    dct: bool,
 }
 
 fn main() {
@@ -36,7 +38,13 @@ fn run(opts: &Opts) -> anyhow::Result<()> {
     let candidates: Vec<_> = images
         .par_iter()
         .map_init(
-            || HasherConfig::new().preproc_dct().to_hasher(),
+            || {
+                if opts.dct {
+                    HasherConfig::new().preproc_dct().to_hasher()
+                } else {
+                    HasherConfig::new().to_hasher()
+                }
+            },
             |hasher, path| {
                 image::open(&path).map(|image| {
                     let hash = hasher.hash_image(&image);
