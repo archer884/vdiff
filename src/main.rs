@@ -40,9 +40,9 @@ fn run(opts: &Opts) -> anyhow::Result<()> {
         .map_init(
             || {
                 if opts.dct {
-                    HasherConfig::new().preproc_dct().to_hasher()
+                    HasherConfig::new().hash_size(10, 10).preproc_dct().to_hasher()
                 } else {
-                    HasherConfig::new().to_hasher()
+                    HasherConfig::new().hash_size(10, 10).to_hasher()
                 }
             },
             |hasher, path| {
