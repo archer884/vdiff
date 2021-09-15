@@ -9,8 +9,14 @@ use rayon::prelude::*;
 #[derive(Clap, Clone, Debug)]
 struct Opts {
     path: String,
+
+    /// deactivate dct
     #[clap(long)]
-    dct: bool,
+    no_dct: bool,
+
+    /// override resolution (default 10)
+    #[clap(short, long)]
+    resolution: Option<u32>,
 }
 
 fn main() {
@@ -39,10 +45,14 @@ fn run(opts: &Opts) -> anyhow::Result<()> {
         .par_iter()
         .map_init(
             || {
-                if opts.dct {
-                    HasherConfig::new().hash_size(10, 10).preproc_dct().to_hasher()
+                let r = opts.resolution.unwrap_or(10);
+                if opts.no_dct {
+                    HasherConfig::new().hash_size(r, r).to_hasher()
                 } else {
-                    HasherConfig::new().hash_size(10, 10).to_hasher()
+                    HasherConfig::new()
+                        .hash_size(r, r)
+                        .preproc_dct()
+                        .to_hasher()
                 }
             },
             |hasher, path| {
