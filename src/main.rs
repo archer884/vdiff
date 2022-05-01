@@ -1,14 +1,24 @@
-use std::{collections::BTreeMap, fs};
+use std::{
+    collections::BTreeMap,
+    fs, io,
+    path::{Path, PathBuf}, borrow::Cow,
+};
 
-use clap::Clap;
-use hashbrown::HashMap;
+use clap::Parser;
+use hashbrown::{HashMap, HashSet};
 use image::GenericImageView;
 use img_hash::HasherConfig;
 use rayon::prelude::*;
 
-#[derive(Clap, Clone, Debug)]
-struct Opts {
-    path: String,
+#[derive(Clone, Debug, Parser)]
+struct Args {
+    path: Option<String>,
+
+    /// paths to ignore
+    /// 
+    /// Store your ignore list in any old text file.
+    #[clap(short, long)]
+    ignore: Option<String>,
 
     /// deactivate dct
     #[clap(long)]
@@ -20,16 +30,21 @@ struct Opts {
 }
 
 fn main() {
-    let opts = Opts::parse();
+    let args = Args::parse();
 
-    if let Err(e) = run(&opts) {
-        eprintln!("{}", e);
+    if let Err(e) = run(&args) {
+        eprintln!("{e}");
         std::process::exit(1);
     }
 }
 
-fn run(opts: &Opts) -> anyhow::Result<()> {
-    let images: Vec<_> = fs::read_dir(&opts.path)?
+fn run(opts: &Args) -> anyhow::Result<()> {
+    let path = match opts.path.as_ref() {
+        Some(path) => Cow::from(Path::new(path)),
+        None => Cow::from(std::env::current_dir()?),
+    };
+    
+    let mut images: Vec<_> = fs::read_dir(&path)?
         .filter_map(|entry| entry.ok())
         .filter_map(|entry| {
             let path = entry.path();
@@ -40,6 +55,10 @@ fn run(opts: &Opts) -> anyhow::Result<()> {
             }
         })
         .collect();
+
+    if let Some(ignore) = &opts.ignore {
+        apply_ignore(&mut images, ignore)?;
+    }
 
     let candidates: Vec<_> = images
         .par_iter()
@@ -85,5 +104,12 @@ fn run(opts: &Opts) -> anyhow::Result<()> {
         }
     }
 
+    Ok(())
+}
+
+fn apply_ignore(images: &mut Vec<PathBuf>, ignore: &str) -> io::Result<()> {
+    let text = fs::read_to_string(ignore)?;
+    let ignored: HashSet<_> = text.lines().map(Path::new).collect();
+    images.retain(|entry| !ignored.contains(&**entry));
     Ok(())
 }

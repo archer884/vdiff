@@ -1,15 +1,15 @@
 [package]
 name = "pcom"
-version = "0.1.0"
+version = "0.2.0"
 edition = "2018"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-anyhow = "1.0.44"
-clap = { git = "https://github.com/clap-rs/clap" }
-hashbrown = "0.11.2"
-image = "0.23.14"
+anyhow = "1.0.57"
+clap = { version = "3.1.14", features = ["derive"] }
+hashbrown = "0.12.0"
+image = "0.24.2"
 # img_hash = "3.2.0"
 img_hash = { git = "https://github.com/archer884/img_hash" }
-rayon = "1.5.1"
+rayon = "1.5.2"
