@@ -339,7 +339,7 @@ dependencies = [
 [[package]]
 name = "img_hash"
 version = "3.3.1"
-source = "git+https://github.com/archer884/img_hash#b8363e94140ceeab2bcc087f5983517bc3933cf4"
+source = "git+https://github.com/archer884/img_hash#58e0a8108d39f4e7f0d2f95ca9b695dcfaedd524"
 dependencies = [
  "base64",
  "image",
