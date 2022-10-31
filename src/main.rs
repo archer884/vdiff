@@ -1,21 +1,22 @@
 use std::{
+    borrow::Cow,
     collections::BTreeMap,
     fs, io,
-    path::{Path, PathBuf}, borrow::Cow,
+    path::{Path, PathBuf},
 };
 
 use clap::Parser;
 use hashbrown::{HashMap, HashSet};
 use image::GenericImageView;
-use img_hash::HasherConfig;
 use rayon::prelude::*;
+use visual_hash::HasherConfig;
 
 #[derive(Clone, Debug, Parser)]
 struct Args {
     path: Option<String>,
 
     /// paths to ignore
-    /// 
+    ///
     /// Store your ignore list in any old text file.
     #[clap(short, long)]
     ignore: Option<String>,
@@ -30,20 +31,18 @@ struct Args {
 }
 
 fn main() {
-    let args = Args::parse();
-
-    if let Err(e) = run(&args) {
+    if let Err(e) = run(&Args::parse()) {
         eprintln!("{e}");
         std::process::exit(1);
     }
 }
 
-fn run(opts: &Args) -> anyhow::Result<()> {
-    let path = match opts.path.as_ref() {
+fn run(args: &Args) -> anyhow::Result<()> {
+    let path = match args.path.as_ref() {
         Some(path) => Cow::from(Path::new(path)),
         None => Cow::from(std::env::current_dir()?),
     };
-    
+
     let mut images: Vec<_> = fs::read_dir(&path)?
         .filter_map(|entry| entry.ok())
         .filter_map(|entry| {
@@ -56,7 +55,7 @@ fn run(opts: &Args) -> anyhow::Result<()> {
         })
         .collect();
 
-    if let Some(ignore) = &opts.ignore {
+    if let Some(ignore) = &args.ignore {
         apply_ignore(&mut images, ignore)?;
     }
 
@@ -64,8 +63,8 @@ fn run(opts: &Args) -> anyhow::Result<()> {
         .par_iter()
         .map_init(
             || {
-                let r = opts.resolution.unwrap_or(10);
-                if opts.no_dct {
+                let r = args.resolution.unwrap_or(10);
+                if args.no_dct {
                     HasherConfig::new().hash_size(r, r).to_hasher()
                 } else {
                     HasherConfig::new()
